@@ -142,7 +142,7 @@ server$run(
 
 You can use the [Heroku scheduler][scheduler] to schedule a recurring R process.
 
-An example command for the scheduler, to run `prog.R`, would be `R -f /app/prog.R --gui-none --no-save`.
+An example command for the scheduler, to run `prog.R`, would be `R --file=/app/prog.R --gui-none --no-save`.
 
 ## Technical Details
 

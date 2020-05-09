@@ -1,0 +1,200 @@
+#!/bin/bash
+# bin/compile BUILD_DIR CACHE_DIR ENV_DIR
+# https://devcenter.heroku.com/articles/buildpack-api#bin-compile
+
+set -eo pipefail
+set -o errtrace
+set -o nounset
+
+# parse and derive params
+BUILDPACK_DIR=$(cd $(dirname $0); cd ..; pwd)
+BUILD_DIR=$1
+CACHE_DIR=$2
+ENV_DIR=$3
+
+# import supporting script
+source "${BUILDPACK_DIR}/bin/script-common"
+
+# derive number from stack (heroku-16, heroku-18, heroku-20)
+HEROKU_STACK=${STACK:7}
+
+# check if it's supported
+if [[ ! $HEROKU_STACK =~ (16|18) ]]; then
+  echo
+  error "ERROR: This buildpack is NOT intended for use with the '${STACK}' stack"
+  echo
+  echo "The supported stacks are 'heroku-16' and 'heroku-18'." | indent
+  echo
+  echo "Use the 'heroku stack:set' CLI command to set the appropriate stack." | indent
+  echo "See https://devcenter.heroku.com/articles/stack" | indent
+  echo
+  echo "Optionally, for greater control and flexibility consider using the" | indent
+  echo "container stack together with the heroku-docker-r implementation". | indent
+  echo "See https://github.com/virtualstaticvoid/heroku-docker-r" | indent
+  echo
+  exit 1
+fi
+
+# ensure current directory is the build location
+# this is where the application files will be located
+# and so relative paths can be used
+cd "$BUILD_DIR"
+
+# Aptfile no longer supported
+if [ -f Aptfile ]; then
+  echo
+  error "ERROR: Use of an Aptfile file is no longer supported."
+  echo "Please use the Heroku container stack with https://github.com/virtualstaticvoid/heroku-docker-r instead" | indent
+  echo "as it provides support for installing system packages and greater control over configuring R." | indent
+  echo
+  exit 1
+fi
+
+# load any application defined environment variables,
+# so that they can be accessed by this script
+export_env_dir "$ENV_DIR"
+
+# enable script debugging
+# set via heroku config:set BUILDPACK_DEBUG=1
+if [ ! -z ${BUILDPACK_DEBUG+x} ] && [ "$BUILDPACK_DEBUG" == "1" ]; then
+  set -x # debug
+fi
+
+# debug
+START_TIME="$(date -u +%s)"
+
+# define static vars
+BUILDPACK_NAME=heroku-buildpack-r
+R_VERSION=3.6.3
+
+# NB: undocumented feature ~ used for testing different versions
+# E.g. set via heroku config:set BUILD_PACK_VERSION=test
+BUILD_PACK_VERSION=${BUILD_PACK_VERSION:-latest}
+
+# NB: change to bust cache
+CACHE_KEY=27ac154b
+BUILD_OUTPUTS="$CACHE_DIR/$CACHE_KEY.tar.gz"
+
+topic "Installing R"
+
+# look for init.R
+if [ -f init.R ]; then
+  INIT_FILE=init.R
+elif [ -f init.r ]; then
+  INIT_FILE=init.r
+else
+  unset INIT_FILE
+fi
+
+#----------------------------------------------------------------------
+# download archives
+
+echo "Version ${R_VERSION} will be installed." | indent
+
+topic "Downloading buildpack archives from AWS S3"
+
+# need chroot?
+if [ ! -z ${INIT_FILE+x} ] || [ -f packrat/init.R ]; then
+
+  # build image
+  fetch $(s3_url $(build_archive)) build.tar.gz build_image
+
+  # install to temp location
+  echo "Extracting..." | indent
+  ROOTFS=$(mktemp -d)
+  mkdir -p $ROOTFS
+  pushd $ROOTFS > /dev/null
+  tar xf $build_image
+  popd > /dev/null
+
+  # HACK: copy relevant libfakeroot library
+  cp "$BUILDPACK_DIR/bin/libfakechroot-Ubuntu-${HEROKU_STACK}-x86_64.so" "$ROOTFS/usr/lib/x86_64-linux-gnu/fakechroot/libfakechroot.so"
+
+fi
+
+# deploy image (R/*, tcltk/*, etc)
+fetch $(s3_url $(deploy_archive)) deploy.tar.gz deploy_image
+echo "Extracting..." | indent
+tar xf $deploy_image
+
+# make relative symlinks to R executables
+mkdir -p bin
+pushd bin > /dev/null
+ln -s ../R/bin/R .
+ln -s ../R/bin/Rscript .
+popd > /dev/null
+
+# restore cached outputs
+if [ -f "$BUILD_OUTPUTS" ]; then
+  topic "Restoring build outputs from cache"
+  echo "See https://github.com/heroku/heroku-repo#purge-cache for info on purging the cache" | indent
+  tar xf "$BUILD_OUTPUTS"
+fi
+
+# figure out additional bits
+# NB: should match logic in detect script
+if [ -f run.R ]; then
+
+  # shiny
+  fetch $(s3_url $(shiny_archive)) shiny.tar.gz shiny_image
+  echo "Extracting..." | indent
+  tar xf $shiny_image
+
+elif [ -f app.R ] || [ -f plumber.R ]; then
+
+  # plumber
+  fetch $(s3_url $(plumber_archive)) plumber.tar.gz plumber_image
+  echo "Extracting..." | indent
+  tar xf $plumber_image
+
+fi
+
+#----------------------------------------------------------------------
+# setup environment for slug build
+
+# fix up path
+export PATH="/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:$PATH"
+
+# patch CRAN_MIRROR if provided
+# E.g. set via heroku config:set CRAN_MIRROR=https://cran.example.org/
+if [ ! -z ${CRAN_MIRROR+x} ]; then
+  echo "Setting CRAN mirror to $CRAN_MIRROR" | indent
+  sed -i "s#https://cloud.r-project.org/#${CRAN_MIRROR}#g" R/etc/Rprofile
+fi
+
+#----------------------------------------------------------------------
+# slug compile
+
+# execute init.R
+if [ ! -z ${INIT_FILE+x} ]; then
+  topic "Executing ${INIT_FILE} file"
+  with_fakechroot /bin/sh /app/bin/R --no-save --quiet --slave --file="/app/${INIT_FILE}" 2>&1 | indent
+fi
+
+# bootstrap packrat?
+if [ -f packrat/init.R ]; then
+  topic "Bootstrapping packrat"
+  with_fakechroot /bin/sh /app/bin/R --no-init-file --no-save --quiet --slave --file=/app/packrat/init.R --args --bootstrap-packrat 2>&1 | indent
+fi
+
+# for backward compatibility, include wrappers for fakechroot, fakeroot and chroot
+cp $BUILDPACK_DIR/bin/wrap_fakechroot bin/fakechroot
+cp $BUILDPACK_DIR/bin/wrap_fakeroot bin/fakeroot
+cp $BUILDPACK_DIR/bin/wrap_chroot bin/chroot
+
+# copy over profile
+mkdir -p .profile.d
+cp $BUILDPACK_DIR/bin/env.sh .profile.d/heroku-buildpack-r-env.sh
+
+# write export script for other buildpacks
+cp $BUILDPACK_DIR/bin/env.sh "$BUILDPACK_DIR/export"
+
+topic "Caching build outputs"
+tar czf "$BUILD_OUTPUTS" R/site-library
+
+topic "R ${R_VERSION} installed successfully!"
+
+# debug
+END_TIME="$(date -u +%s)"
+ELAPSED="$(($END_TIME-$START_TIME))"
+echo "Install took $ELAPSED seconds to complete" | indent

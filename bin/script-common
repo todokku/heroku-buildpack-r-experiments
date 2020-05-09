@@ -1,0 +1,106 @@
+#!/usr/bin/env bash
+
+topic() {
+  echo "-----> $*"
+}
+
+notice() {
+  echo -e "       \033[1;33m${*}\033[0m"
+}
+
+error() {
+  echo -e " !     \031[1;33m${*}\033[0m"
+}
+
+indent() {
+  sed -u 's/^/       /'
+}
+
+export_env_dir() {
+  local env_dir=$1
+  local whitelist_regex=${2:-''}
+  local blacklist_regex=${3:-'^(PATH|GIT_DIR|CPATH|CPPATH|LD_PRELOAD|LIBRARY_PATH)$'}
+  if [ -d "$env_dir" ]; then
+    for e in $(ls $env_dir); do
+      echo "$e" | grep -E "$whitelist_regex" | grep -qvE "$blacklist_regex" &&
+      export "$e=$(cat $env_dir/$e)"
+      :
+    done
+  fi
+}
+
+build_archive() {
+  echo "${BUILDPACK_NAME}-${HEROKU_STACK}-${R_VERSION}-build.tar.gz"
+}
+
+deploy_archive() {
+  echo "${BUILDPACK_NAME}-${HEROKU_STACK}-${R_VERSION}-deploy.tar.gz"
+}
+
+shiny_archive() {
+  echo "${BUILDPACK_NAME}-${HEROKU_STACK}-${R_VERSION}-shiny.tar.gz"
+}
+
+plumber_archive() {
+  echo "${BUILDPACK_NAME}-${HEROKU_STACK}-${R_VERSION}-plumber.tar.gz"
+}
+
+function s3_url() {
+  echo "https://${BUILDPACK_NAME}.s3.amazonaws.com/${BUILD_PACK_VERSION}/${1}"
+}
+
+fetch() {
+  local url="$1"
+  local file="$2"
+  local __filevar=$3
+
+  local filename="${CACHE_DIR}/${CACHE_KEY}-${file}"
+
+  echo "Downloading $url" | indent
+  if [ -f $filename ]; then
+    echo "Found in cache" | indent
+  else
+    curl -sSfL -o "$filename" "$url" | indent
+  fi
+
+  eval $__filevar="'$filename'"
+}
+
+with_fakechroot() {
+
+  # NOTE: the executable cannot be a script
+
+  # set environment and run fakechroot
+  # FAKECHROOT_DIR_MAP does the magic of mapping the build directory as /app in the chroot
+  # so no symlinks are necessary (and all the problems they cause R goes away!)
+  /usr/bin/env HOME=/ \
+               SHLVL=0 \
+               PWD=/app \
+               LD_PRELOAD="$ROOTFS/usr/lib/x86_64-linux-gnu/fakechroot/libfakechroot.so" \
+               FAKECHROOT_BASE="$ROOTFS" \
+               FAKECHROOT_EXPAND_SYMLINKS=true \
+               FAKECHROOT_AF_UNIX_PATH=/tmp \
+               FAKECHROOT_EXCLUDE_PATH="/dev:/proc:/sys:/etc/resolv.conf:/etc/host.conf:/lib/modules" \
+               FAKECHROOT_DIR_MAP="$BUILD_DIR!/app" \
+               FAKECHROOT_ELFLOADER="$ROOTFS/lib64/ld-linux-x86-64.so.2" \
+               LD_LIBRARY_PATH="$BUILD_DIR/R/lib/R/lib:$BUILD_DIR/tcltk/lib:$ROOTFS/lib:$ROOTFS/lib/x86_64-linux-gnu:$ROOTFS/usr/lib:$ROOTFS/usr/lib/x86_64-linux-gnu:." \
+               PATH="/app/bin:/app/R/lib/R/bin:/app/tcltk/bin:$PATH" \
+               R_PROFILE="/app/R/etc/Rprofile.site" \
+               LANG=C.UTF-8 \
+               TZ=UTC \
+               DEBIAN_FRONTEND=noninteractive \
+    $ROOTFS/lib64/ld-linux-x86-64.so.2 "$@"
+
+}
+
+with_fakechroot_sudo() {
+
+  # fakeroot is a shell script, so needs to be run via /bin/sh so that
+  # ld-linux-x86-64.so.2 doesn't complain about ELF headers missing
+  with_fakechroot /bin/sh \
+    /usr/bin/fakeroot-sysv \
+      -l "$ROOTFS/usr/lib/x86_64-linux-gnu/libfakeroot/libfakeroot-sysv.so" \
+      -f "$ROOTFS/usr/bin/faked-sysv" \
+      "$@"
+
+}
