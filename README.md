@@ -40,6 +40,8 @@ See the [detect](bin/detect) script for the matching logic used.
 
 The `init.R` file can be used to install R packages if required.
 
+*NOTE:* [Packrat][packrat] is the preferred way to manage your package dependencies and their respective versions, and the `init.R` file isn't required if you use packrat.
+
 The following example file can be used. Provide the package names you want to install to the `my_packages` list:
 
 ```
@@ -73,7 +75,13 @@ install.packages("/app/PackageName-Version.tar.gz", repos=NULL, type="source")
 
 *NOTE:* The path to the package archive needs to be an absolute path, based off the `/app` root path, which is the location of your applications files on Heroku.
 
-*NOTE:* Using [Packrat][packrat] is the preferred way to manage your package dependencies and their respective versions.
+For convenience, an R helper function, [`helpers.installPackages`](bin/helpers.R), to make installing packages easier. It is included in the buildpack and loaded via the site profile.
+
+The following example file can now be used. Provide the package names you want to install to the `my_packages` list:
+
+```
+helpers.installPackages("package_name_1", "package_name_2", ...)
+```
 
 ### Installing Binary Dependencies
 
