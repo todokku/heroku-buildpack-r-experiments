@@ -4,6 +4,8 @@
 
 This is a [Heroku Buildpack][buildpacks] for applications which use [R][rproject] for statistical computing and [CRAN][cran] for R packages.
 
+The buildpack supports the [heroku-16][stack16] and [heroku-18][stack18] stacks.
+
 R is ‘GNU S’, a freely available language and environment for statistical computing and graphics which provides
 a wide variety of statistical and graphical techniques: linear and nonlinear modelling, statistical tests, time
 series analysis, classification, clustering, etc. Please consult the [R project homepage][rproject] for further information.
@@ -215,6 +217,8 @@ MIT License. Copyright (c) 2020 Chris Stefano. See [LICENSE](LICENSE) for detail
 [s3]: https://heroku-buildpack-r.s3.amazonaws.com
 [scheduler]: https://addons.heroku.com/scheduler
 [shiny]: https://shiny.rstudio.com
+[stack16]: https://devcenter.heroku.com/articles/heroku-16-stack
+[stack18]: https://devcenter.heroku.com/articles/heroku-18-stack
 [tcltk]: https://www.tcl.tk
 [travis]: https://travis-ci.org/virtualstaticvoid/heroku-buildpack-r
 [travis_img]: https://travis-ci.org/virtualstaticvoid/heroku-buildpack-r.svg?branch=master
