@@ -5,11 +5,11 @@ topic() {
 }
 
 notice() {
-  echo -e "       \033[1;33m${*}\033[0m"
+  echo -e "       \e[1;33m${*}\e[0m"
 }
 
 error() {
-  echo -e " !     \031[1;33m${*}\033[0m"
+  echo -e " !     \e[1;31m${*}\e[0m"
 }
 
 indent() {
