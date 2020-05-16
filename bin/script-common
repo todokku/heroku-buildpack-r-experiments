@@ -76,7 +76,7 @@ with_fakechroot() {
 
   /usr/bin/env HOME="/app" \
                SHLVL=0 \
-               PWD=/app \
+               PWD="/app" \
                LD_PRELOAD="$BUILD_DIR/R/lib/libfakechroot.so" \
                FAKECHROOT_BASE="$ROOTFS" \
                FAKECHROOT_EXPAND_SYMLINKS=true \
