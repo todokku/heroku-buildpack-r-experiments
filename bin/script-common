@@ -72,11 +72,12 @@ with_fakechroot() {
 
   # set environment and run fakechroot
   # FAKECHROOT_DIR_MAP does the magic of mapping the build directory as /app in the chroot
-  # so no symlinks are necessary (and all the problems they cause R goes away!)
-  /usr/bin/env HOME=/ \
+  # so no symlinks are necessary (and all the problems they cause R go away!)
+
+  /usr/bin/env HOME="/app" \
                SHLVL=0 \
                PWD=/app \
-               LD_PRELOAD="$ROOTFS/usr/lib/x86_64-linux-gnu/fakechroot/libfakechroot.so" \
+               LD_PRELOAD="$BUILD_DIR/R/lib/libfakechroot.so" \
                FAKECHROOT_BASE="$ROOTFS" \
                FAKECHROOT_EXPAND_SYMLINKS=true \
                FAKECHROOT_AF_UNIX_PATH=/tmp \
@@ -97,6 +98,7 @@ with_fakechroot_sudo() {
 
   # fakeroot is a shell script, so needs to be run via /bin/sh so that
   # ld-linux-x86-64.so.2 doesn't complain about ELF headers missing
+
   with_fakechroot /bin/sh \
     /usr/bin/fakeroot-sysv \
       -l "$ROOTFS/usr/lib/x86_64-linux-gnu/libfakeroot/libfakeroot-sysv.so" \

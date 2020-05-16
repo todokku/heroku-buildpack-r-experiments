@@ -107,9 +107,6 @@ if [ ! -z ${INIT_FILE+x} ] || [ -f packrat/init.R ]; then
   tar xf $build_image
   popd > /dev/null
 
-  # HACK: copy relevant libfakeroot library
-  cp "$BUILDPACK_DIR/bin/libfakechroot-Ubuntu-${HEROKU_STACK}-x86_64.so" "$ROOTFS/usr/lib/x86_64-linux-gnu/fakechroot/libfakechroot.so"
-
 fi
 
 # deploy image (R/*, tcltk/*, etc)
