@@ -85,7 +85,7 @@ with_fakechroot() {
                FAKECHROOT_DIR_MAP="$BUILD_DIR!/app" \
                FAKECHROOT_ELFLOADER="$ROOTFS/lib64/ld-linux-x86-64.so.2" \
                LD_LIBRARY_PATH="$BUILD_DIR/R/lib/R/lib:$BUILD_DIR/tcltk/lib:$ROOTFS/lib:$ROOTFS/lib/x86_64-linux-gnu:$ROOTFS/usr/lib:$ROOTFS/usr/lib/x86_64-linux-gnu:." \
-               PATH="/app/bin:/app/R/lib/R/bin:/app/tcltk/bin:$PATH" \
+               PATH="/app/bin:/app/R/lib/R/bin:/app/tcltk/bin:/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin" \
                R_PROFILE="/app/R/etc/Rprofile.site" \
                LANG=C.UTF-8 \
                TZ=UTC \

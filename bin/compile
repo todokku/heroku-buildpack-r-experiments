@@ -149,9 +149,6 @@ fi
 #----------------------------------------------------------------------
 # setup environment for slug build
 
-# fix up path
-export PATH="/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:$PATH"
-
 # copy the Rprofile.site file
 cp -f "${BUILDPACK_DIR}/bin/Rprofile.site" R/etc/Rprofile.site
 
