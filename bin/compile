@@ -152,11 +152,14 @@ fi
 # fix up path
 export PATH="/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:$PATH"
 
+# copy the Rprofile.site file
+cp -f "${BUILDPACK_DIR}/bin/Rprofile.site" R/etc/Rprofile.site
+
 # patch CRAN_MIRROR if provided
 # E.g. set via heroku config:set CRAN_MIRROR=https://cran.example.org/
 if [ ! -z ${CRAN_MIRROR+x} ]; then
   echo "Setting CRAN mirror to $CRAN_MIRROR" | indent
-  sed -i "s#https://cloud.r-project.org/#${CRAN_MIRROR}#g" R/etc/Rprofile
+  sed -i "s#https://cloud.r-project.org/#${CRAN_MIRROR}#g" R/etc/Rprofile.site
 fi
 
 #----------------------------------------------------------------------
