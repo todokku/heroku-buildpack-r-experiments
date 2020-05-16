@@ -17,7 +17,7 @@ It also includes support for the [Packrat][packrat] package manager and the [Shi
 
 ## Usage
 
-To use this version, the buildpack URL is `https://github.com/virtualstaticvoid/heroku-buildpack-r.git#heroku-18`.
+To use this version, the buildpack URL is `https://github.com/virtualstaticvoid/heroku-buildpack-r-experiments.git#heroku-18`.
 
 The buildpack will detect your application makes use of R if has one (or more) of the following files in the project directory:
 

@@ -35,7 +35,7 @@ git commit -m "initial" --no-gpg-sign > /dev/null
 
 # create the app with shell buildpack
 heroku create --stack heroku-${HEROKU_STACK} \
-              --buildpack https://github.com/virtualstaticvoid/heroku-buildpack-r.git#${BRANCH} 2>&1 | indent
+              --buildpack https://github.com/virtualstaticvoid/heroku-buildpack-r-experiments.git#${BRANCH} 2>&1 | indent
 
 # get app name (so it can be destroyed)
 app=$(heroku apps:info -j | jq -r '.app.name')
