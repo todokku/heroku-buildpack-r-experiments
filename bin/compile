@@ -150,7 +150,7 @@ fi
 # setup environment for slug build
 
 # copy the Rprofile.site file
-cp -f "${BUILDPACK_DIR}/bin/Rprofile.site" R/etc/Rprofile.site
+cp -f "${BUILDPACK_DIR}/bin/Rprofile.site" R/lib/R/etc/Rprofile.site
 
 # patch CRAN_MIRROR if provided
 # E.g. set via heroku config:set CRAN_MIRROR=https://cran.example.org/
