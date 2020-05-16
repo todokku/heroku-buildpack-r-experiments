@@ -40,6 +40,9 @@ heroku create --stack heroku-${HEROKU_STACK} \
 # get app name (so it can be destroyed)
 app=$(heroku apps:info -j | jq -r '.app.name')
 
+# uncomment for debugging
+# heroku config:set BUILDPACK_DEBUG=1
+
 # test the deployment
 topic "Deploying test"
 git push heroku master 2>&1 | indent
