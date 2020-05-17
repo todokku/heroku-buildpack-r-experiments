@@ -126,6 +126,9 @@ if [ -f "$BUILD_OUTPUTS" ]; then
   topic "Restoring build outputs from cache"
   echo "See https://github.com/heroku/heroku-repo#purge-cache for info on purging the cache" | indent
   tar xf "$BUILD_OUTPUTS"
+else
+  mkdir -p R/site-library
+  touch R/site-library/.keep
 fi
 
 # figure out additional bits
