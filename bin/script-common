@@ -87,6 +87,7 @@ with_fakechroot() {
                LD_LIBRARY_PATH="$BUILD_DIR/R/lib/R/lib:$BUILD_DIR/tcltk/lib:$ROOTFS/lib:$ROOTFS/lib/x86_64-linux-gnu:$ROOTFS/usr/lib:$ROOTFS/usr/lib/x86_64-linux-gnu:." \
                PATH="/app/bin:/app/R/lib/R/bin:/app/tcltk/bin:/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin" \
                R_LIBS_USER="/app/R/site-library" \
+               R_CHROOT_APP_DIR="$BUILD_DIR" \
                LANG=C.UTF-8 \
                TZ=UTC \
                DEBIAN_FRONTEND=noninteractive \
